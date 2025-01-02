@@ -31,7 +31,7 @@ ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 from datetime import timedelta
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=50),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
         # 'AUTH_HEADER_TYPES': ('Bearer',),
 
@@ -62,20 +62,33 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-        
+    'corsheaders.middleware.CorsMiddleware'        
 
 ]
+
+CORS_ALLOW_CREDENTIALS = True
 
 AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend',  
 ]
 CORS_ALLOWED_ORIGINS = [
-    'http://localhost:5173'
-
+    'http://localhost:5173',
+]
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    '*',
 ]
 CORS_ALLOW_ALL_ORIGINS = True
 
 ROOT_URLCONF = 'Ecommerce.urls'
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.TokenAuthentication',  # For token-based auth
+        'rest_framework_simplejwt.authentication.JWTAuthentication',  # For JWT auth
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',  # Require authentication by default
+    ),
+}
 
 TEMPLATES = [
     {

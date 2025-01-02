@@ -3,8 +3,10 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
-from .models import CustomUser, Category, Product
-from .serializer import UserSerializer, LoginSerializer, CategorySerializer, ProductSerializer
+from .models import CustomUser, Category, Product,Cart
+from .serializer import UserSerializer, LoginSerializer, CategorySerializer, ProductSerializer,CartSerializer
+
+from django.shortcuts import get_object_or_404
 
 # User Management Views
 class RegisterView(generics.CreateAPIView):
@@ -15,15 +17,11 @@ class RegisterView(generics.CreateAPIView):
 class UserProfileView(generics.RetrieveUpdateAPIView):
     queryset = CustomUser.objects.all()
     serializer_class = UserSerializer
-    # permission_classes = [permissions.IsAuthenticated]  
+    permission_classes = [permissions.IsAuthenticated]  
     def get_object(self):
-        # print(request.headers)
         user_id = self.kwargs.get('id', None)
-        print(user_id)   
-        
         if user_id:
-            return CustomUser.objects.get(id=user_id)
-        
+            return CustomUser.objects.get(id=user_id) 
         else:
             return self.request.user
 
@@ -50,17 +48,17 @@ class LoginView(APIView):
 class CategoryListCreateView(generics.ListCreateAPIView):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
 
 class CategoryDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
 
 class ProductListCreateView(generics.ListCreateAPIView):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         Category_id = self.request.query_params.get('category', None)
@@ -71,7 +69,43 @@ class ProductListCreateView(generics.ListCreateAPIView):
 class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.IsAuthenticated]
 
-# class CartView(generics.ListCreateAPIView):
-#     queryset =
+class CartView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        """View all items in the cart for the current user."""
+        cart_items = Cart.objects.filter(user=request.user)
+        serializer = CartSerializer(cart_items, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        """Add a product to the cart or update quantity."""
+        product_id = request.data.get('product_id')
+        quantity = request.data.get('quantity', 1)
+
+        # Validate product
+        product = get_object_or_404(Product, id=product_id)
+        print(product)
+        cart_item, created = Cart.objects.get_or_create(
+            user=request.user, 
+            product=product,
+            defaults={'quantity': quantity}
+        )
+
+        if not created:
+            # Update the quantity if the item already exists
+            cart_item.quantity += quantity
+            cart_item.save()
+
+        return Response(
+            {"message": "Product added to cart successfully!"},
+            status=status.HTTP_201_CREATED
+        )
+
+    def delete(self, request, product_id):
+        """Remove a product from the cart."""
+        cart_item = get_object_or_404(Cart, user=request.user, product_id=product_id)
+        cart_item.delete()
+        return Response({"message": "Product removed from cart"})
