@@ -14,7 +14,7 @@ class RegisterView(generics.CreateAPIView):
     serializer_class = UserSerializer
     permission_classes = [permissions.AllowAny]
 
-class UserProfileView(generics.RetrieveUpdateAPIView):
+class UserProfileView(generics.RetrieveUpdateDestroyAPIView):
     queryset = CustomUser.objects.all()
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]  
@@ -24,7 +24,7 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
             return CustomUser.objects.get(id=user_id) 
         else:
             return self.request.user
-
+    
 class LoginView(APIView):
     permission_classes = [permissions.AllowAny]
 
@@ -75,16 +75,14 @@ class CartView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        """View all items in the cart for the current user."""
         cart_items = Cart.objects.filter(user=request.user)
         serializer = CartSerializer(cart_items, many=True)
         return Response(serializer.data)
 
     def post(self, request):
-        """Add a product to the cart or update quantity."""
         product_id = request.data.get('product_id')
         quantity = request.data.get('quantity', 1)
-
+        
         # Validate product
         product = get_object_or_404(Product, id=product_id)
         print(product)
@@ -95,7 +93,6 @@ class CartView(APIView):
         )
 
         if not created:
-            # Update the quantity if the item already exists
             cart_item.quantity += quantity
             cart_item.save()
 
@@ -105,7 +102,6 @@ class CartView(APIView):
         )
 
     def delete(self, request, product_id):
-        """Remove a product from the cart."""
         cart_item = get_object_or_404(Cart, user=request.user, product_id=product_id)
         cart_item.delete()
         return Response({"message": "Product removed from cart"})

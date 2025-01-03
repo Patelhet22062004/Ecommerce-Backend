@@ -9,7 +9,7 @@ CustomUser = get_user_model()
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
-        fields = ['id', 'username', 'email', 'password']
+        fields = ['id', 'username', 'email','mobile_number' ,'password']
         extra_kwargs = {
             'password': {'write_only': True},
             'id': {'read_only': True}
@@ -48,6 +48,7 @@ class CartSerializer(serializers.ModelSerializer):
     product_price = serializers.DecimalField(source='product.price', read_only=True, max_digits=10, decimal_places=2)
     product_image = serializers.ImageField(source='product.image', read_only=True)
     product_id = serializers.IntegerField(source='product.id', read_only=True)
+    
     total_price = serializers.ReadOnlyField()
 
     class Meta:

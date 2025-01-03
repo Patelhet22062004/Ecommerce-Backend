@@ -7,7 +7,7 @@ from django.contrib.auth.models import AbstractUser
 class CustomUser(AbstractUser):
     is_customer = models.BooleanField(default=False, help_text="Designates whether the user is a customer.")
     is_admin = models.BooleanField(default=False, help_text="Designates whether the user is an admin.")
-    
+    mobile_number = models.CharField(max_length=12,default=0)
     groups = models.ManyToManyField(
         'auth.Group', 
         related_name='customuser_groups',  
@@ -72,4 +72,16 @@ class Cart(models.Model):
 #     updated_at = models.DateTimeField(auto_now=True) 
 #     def __str__(self):
 #         return self.name
-    
+class Order(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="orders")
+    product=models.ForeignKey(Product,on_delete=models.CASCADE,related_name="order_product")
+    full_name = models.CharField(max_length=255)
+    email = models.EmailField()
+    address = models.TextField()
+    city = models.CharField(max_length=100)
+    state = models.CharField(max_length=100)
+    zip_code = models.CharField(max_length=10)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.id
