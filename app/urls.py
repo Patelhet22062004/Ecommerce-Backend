@@ -7,6 +7,8 @@ from .views import (
     ProductListCreateView,
     ProductDetailView,
     CartView,
+    OrderView,
+    UserOrdersView,
     
 )
 from rest_framework_simplejwt.views import (
@@ -43,5 +45,7 @@ urlpatterns = [
     path('products/<int:pk>/', ProductDetailView.as_view(), name='product-detail'),
     path('cart/', CartView.as_view(), name='cart'),
     path('cart/<int:product_id>/', CartView.as_view(), name='cart-delete'),
+    path('order/create/', OrderView.as_view(), name='create_order'),
+    path('orders/', UserOrdersView.as_view(), name='user_orders'),
 
 ]

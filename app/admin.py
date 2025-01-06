@@ -1,7 +1,7 @@
 from django.contrib import admin
 # from django.contrib.auth.models import User, Group
 
-from .models import CustomUser,Product,Category,Cart
+from .models import CustomUser,Product,Category,Cart,Order
 # admin.site.register(User)
 # admin.site.register(Group)
 @admin.register(CustomUser)
@@ -18,6 +18,9 @@ class category(admin.ModelAdmin):
 class cart(admin.ModelAdmin):
 
     list_display=['id', 'user','product', 'product_id','quantity', 'number_of_items', 'total', 'created_at', 'updated_at', ]
+@admin.register(Order)
+class OrderAdmin(admin.ModelAdmin):
+    list_display=['id',"user","full_name","email","address","city","state","zip_code"]
 # @admin.register(Cartitem)
 # class cartitem(admin.ModelAdmin):
 #         list_display=[        'id', 'Cart', 'Product', 'created_at', 'updated_at'
