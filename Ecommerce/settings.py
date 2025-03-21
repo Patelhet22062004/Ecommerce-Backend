@@ -55,7 +55,7 @@ INSTALLED_APPS = [
     'account',
 ]
 
-ALLOWED_HOSTS = ["ecommerce-backend-5kpb.onrender.com", "127.0.0.1"]
+ALLOWED_HOSTS = ["ecommerce-backend-18rw.onrender.com", "127.0.0.1"]
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
