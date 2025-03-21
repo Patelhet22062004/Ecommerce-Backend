@@ -25,7 +25,6 @@ SECRET_KEY = 'django-insecure-@g=ac)zu516cah2^y#)27tnymn9oe$g_x^1vk&)jiv2j)2h8r+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 
 
 from datetime import timedelta
@@ -56,6 +55,7 @@ INSTALLED_APPS = [
     'account',
 ]
 
+ALLOWED_HOSTS = ["ecommerce-backend-5kpb.onrender.com", "127.0.0.1"]
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
