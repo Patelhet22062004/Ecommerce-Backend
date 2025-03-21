@@ -1,24 +1,26 @@
 from django.contrib import admin
 # from django.contrib.auth.models import User, Group
 
-from .models import CustomUser,Product,Category,Cart,Order
+from .models import CustomUser,Product,Category,Cart,checkout,ProductImage
 # admin.site.register(User)
 # admin.site.register(Group)
 @admin.register(CustomUser)
 class UserAdmin(admin.ModelAdmin):
-    list_display=['id','username','email','password','mobile_number','is_customer','is_admin']
+    list_display=['id','username',"last_login",'email','password','mobile_number','is_customer','is_admin']
 @admin.register(Product)
 class product(admin.ModelAdmin):
     list_display=['name','description','sizes','image','stock','Category','brand','price','review']
+@admin.register(ProductImage)
+class productimage(admin.ModelAdmin):
+    list_display=['image']
 @admin.register(Category)
 class category(admin.ModelAdmin):
     list_display=['id','name','description']
 
 @admin.register(Cart)
 class cart(admin.ModelAdmin):
-
     list_display=['id', 'user','product', 'product_id','quantity', 'number_of_items', 'total', 'created_at', 'updated_at', ]
-@admin.register(Order)
+@admin.register(checkout)
 class OrderAdmin(admin.ModelAdmin):
     list_display=['id',"user","full_name","email","address","city","state","zip_code"]
 # @admin.register(Cartitem)

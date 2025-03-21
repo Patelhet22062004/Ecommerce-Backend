@@ -1,30 +1,25 @@
 from rest_framework import generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from django.contrib.auth import authenticate
+from django.contrib.auth import authenticate,get_user_model
 from rest_framework_simplejwt.tokens import RefreshToken
-from .models import CustomUser, Category, Product,Cart,Order
+from .models import CustomUser,Category, Product,Cart,checkout
+from account.models import OTP
 from .serializer import UserSerializer, LoginSerializer, CategorySerializer, ProductSerializer,CartSerializer,OrderSerializer
-
+from django.contrib.auth.hashers import make_password
 from django.shortcuts import get_object_or_404
 
-# User Management Views
 class RegisterView(generics.CreateAPIView):
     queryset = CustomUser.objects.all()
     serializer_class = UserSerializer
     permission_classes = [permissions.AllowAny]
 
-class UserProfileView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = CustomUser.objects.all()
-    serializer_class = UserSerializer
-    permission_classes = [permissions.IsAuthenticated]  
-    def get_object(self):
-        user_id = self.kwargs.get('id', None)
-        if user_id:
-            return CustomUser.objects.get(id=user_id) 
-        else:
-            return self.request.user
-    
+    def create(self, request, *args, **kwargs):
+        request.data["password"] = make_password(request.data["password"])
+        response = super().create(request, *args, **kwargs)
+        return response
+
+
 class LoginView(APIView):
     permission_classes = [permissions.AllowAny]
 
@@ -44,7 +39,16 @@ class LoginView(APIView):
                 }, status=status.HTTP_200_OK)
             return Response({'error': 'Invalid credentials'}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
+class UserProfileView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = CustomUser.objects.all()
+    serializer_class = UserSerializer
+    # permission_classes = [permissions.IsAuthenticated]  
+    def get_object(self):
+        user_id = self.kwargs.get('id', None)
+        if user_id:
+            return CustomUser.objects.get(id=user_id) 
+        else:
+            return self.request.user
 class CategoryListCreateView(generics.ListCreateAPIView):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
@@ -54,11 +58,24 @@ class CategoryDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     permission_classes = [permissions.IsAuthenticated]
-
-class ProductListCreateView(generics.ListCreateAPIView):
+class ProductCreateView(generics.CreateAPIView):
     queryset = Product.objects.all()
+  
     serializer_class = ProductSerializer
+
     permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        Category_id = self.request.query_params.get('category', None)
+        if Category_id:
+            return Product.objects.filter(Category_id=Category_id)
+        return Product.objects.all()
+
+class ProductListView(generics.ListAPIView):
+    queryset = Product.objects.all()
+  
+    serializer_class = ProductSerializer
+    permission_classes = [permissions.AllowAny]
 
     def get_queryset(self):
         Category_id = self.request.query_params.get('category', None)
@@ -69,7 +86,7 @@ class ProductListCreateView(generics.ListCreateAPIView):
 class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
 class CartView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -109,52 +126,45 @@ class CartView(APIView):
         cart_item.delete()
         return Response({"message": "Product removed from cart"})
 class OrderView(generics.ListCreateAPIView):
-    # permission_classes = [permissions.IsAuthenticated]
-    serializer_class = OrderSerializer
+    queryset = checkout.objects.all()
+    permission_classes=[permissions.IsAuthenticated]
+    def get(self, request):
+        """Fetch all orders of the authenticated user"""
+        
+        orders = checkout.objects.filter(user=request.user)
+        serializer = OrderSerializer(orders, many=True)
+        return Response(serializer.data)
+
     def post(self, request, *args, **kwargs):
-        user = request.user
-        cart = Cart.objects.filter(user=user).first()
-        if not cart:
+       
+        # Get the user's cart
+        cart_items = Cart.objects.filter(user=request.user)
+        print(cart_items)
+        if not cart_items.exists():
             return Response({"error": "Cart is empty."}, status=status.HTTP_400_BAD_REQUEST)
 
         data = request.data
-        full_name = data.get("full_name")
-        email = data.get("email")
-        address = data.get("address")
-        city = data.get("city")
-        state = data.get("state")
-        zip_code = data.get("zip_code")
+        required_fields = ["full_name", "email", "address", "city", "state", "zip_code"]
 
-        if not all([full_name, email, address, city, state, zip_code]):
+        if not all(data.get(field) for field in required_fields):
             return Response({"error": "All fields are required."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Create the order
-        order = Order.objects.create(
-            user=user,
-            cart=cart,
-            full_name=full_name,
-            email=email,
-            address=address,
-            city=city,
-            state=state,
-            zip_code=zip_code,
+        # Calculate total price
+        total_price = sum(item.total for item in cart_items)
+
+        # Create order
+        order =checkout.objects.create(
+            user=request.user,
+            full_name=data["full_name"],
+            email=data["email"],
+            address=data["address"],
+            city=data["city"],
+            state=data["state"],
+            zip_code=data["zip_code"],
+            total_price=total_price,  # Assuming you have a total_amount field
         )
+        order.cart.set(cart_items)  # ✅ Correct way to assign ManyToManyField
 
+        # Clear the cart after order is placed
+        # cart_items.delete()
         return Response(OrderSerializer(order).data, status=status.HTTP_201_CREATED)
-
-class UserOrdersView(generics.ListAPIView):
-    queryset = Order.objects.all()
-    serializer_class = OrderSerializer
-    permission_classes = [permissions.AllowAny] 
-    # permission_classes = [permissions.IsAuthenticated]  
-    def get_object(self):
-        user_id = self.kwargs.get('id', None)
-        if user_id:
-            return Order.objects.get(id=user_id) 
-        else:
-            return self.request.user
-    
-    # def get(self, request):
-    #     orders = Order.objects.filter(user=request.user)
-    #     serializer = OrderSerializer(orders, many=True)
-    #     return Response(serializer.data)
